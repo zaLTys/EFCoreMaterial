@@ -7,7 +7,12 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("Postgres");
 builder.Services.AddDbContext<MyDbContext>(options => options.UseNpgsql(connectionString));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -21,6 +26,8 @@ using (var scope = app.Services.CreateScope())
     {
         var dbContext = services.GetRequiredService<MyDbContext>();
         dbContext.Database.Migrate();
+        
+        ListMigrations(dbContext);
     }
     catch (Exception ex)
     {
@@ -42,4 +49,13 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+void ListMigrations(MyDbContext myDbContext)
+{
+    var migrations = myDbContext.Database.GetAppliedMigrations();
+    foreach (var migration in migrations)
+    {
+        Console.WriteLine($"Applied Migration: {migration}");
+    }
+}
 

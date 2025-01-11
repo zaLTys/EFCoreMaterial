@@ -15,6 +15,18 @@ public class MyDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        
+        // Configure the Product-Category relationship
+        modelBuilder.Entity<Product>()
+            .HasOne(p => p.Category)                 // Specify the navigation property
+            .WithMany(c => c.Products)              // Specify the inverse navigation property
+            .HasForeignKey(p => p.CategoryId)       // Specify the foreign key
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<Product>()
+            .Navigation(p => p.Category)
+            .IsRequired();
+        
 
         var electronicsCategoryId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var booksCategoryId = Guid.Parse("22222222-2222-2222-2222-222222222222");
