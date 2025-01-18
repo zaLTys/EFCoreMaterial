@@ -3,9 +3,16 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.AddConsole();
+
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("Postgres");
-builder.Services.AddDbContext<MyDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddDbContext<MyDbContext>(options =>
+{
+    options.UseNpgsql(connectionString)
+        .EnableSensitiveDataLogging() // Optional, logs parameter values
+        .LogTo(Console.WriteLine, LogLevel.Information);
+});
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -26,7 +33,7 @@ using (var scope = app.Services.CreateScope())
     {
         var dbContext = services.GetRequiredService<MyDbContext>();
         dbContext.Database.Migrate();
-        
+
         ListMigrations(dbContext);
     }
     catch (Exception ex)
@@ -58,4 +65,3 @@ void ListMigrations(MyDbContext myDbContext)
         Console.WriteLine($"Applied Migration: {migration}");
     }
 }
-
