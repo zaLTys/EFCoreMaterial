@@ -1,67 +1,103 @@
 using DataAccessLayer;
+using FluentMigrator.Runner;
+using FluentMigrator.Runner.Initialization;
+using FluentMigrator.Runner.VersionTableInfo;
 using Microsoft.EntityFrameworkCore;
 
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Logging.AddConsole();
-
-// Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("Postgres");
-builder.Services.AddDbContext<MyDbContext>(options =>
+namespace WebApplication1
 {
-    options.UseNpgsql(connectionString)
-        .EnableSensitiveDataLogging() // Optional, logs parameter values
-        .LogTo(Console.WriteLine, LogLevel.Information);
-});
-
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
+    public class Program
     {
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-        options.JsonSerializerOptions.WriteIndented = true;
-    });
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
 
-var app = builder.Build();
+            builder.Logging.AddConsole();
 
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var dbContext = services.GetRequiredService<MyDbContext>();
-        dbContext.Database.Migrate();
+            // Add services to the container.
+            var connectionString = builder.Configuration.GetConnectionString("Postgres");
+            builder.Services.AddDbContext<MyDbContext>(options =>
+            {
+                options.UseNpgsql(connectionString);
+                //.EnableSensitiveDataLogging() // Optional, logs parameter values
+                //.LogTo(Console.WriteLine, LogLevel.Information);
+            });
 
-        ListMigrations(dbContext);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"An error occurred while migrating the database: {ex.Message}");
-    }
-}
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.ReferenceHandler =
+                        System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+                    options.JsonSerializerOptions.WriteIndented = true;
+                });
+            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
+            
+            //Fluent migrator
+            builder.Services.AddFluentMigratorCore()
+                .ConfigureRunner(rb => rb
+                    .AddPostgres()
+                    .WithGlobalConnectionString(connectionString)
+                    .WithGlobalCommandTimeout(TimeSpan.FromMinutes(15))
+                    .ScanIn(typeof(MyDbContext).Assembly).For.Migrations())
+                .AddScoped<IMigrationRunner, MigrationRunner>()
+                .AddScoped(typeof(IVersionTableMetaData), typeof(DefaultVersionTableMetaData))
+                .Configure<RunnerOptions>(opt =>
+                {
+                    opt.Tags = new[] { "Postgres" };
+                });
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
-app.UseHttpsRedirection();
+            var app = builder.Build();
 
-app.UseAuthorization();
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                try
+                {
+                    var dbContext = services.GetRequiredService<MyDbContext>();
+                    dbContext.Database.Migrate();
 
-app.MapControllers();
+                    ListMigrations(dbContext);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred while migrating the database: {ex.Message}");
+                }
+            }
+            
+            using (var scope = app.Services.CreateScope())
+            {
+                var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+                runner.MigrateUp();
+            }
 
-app.Run();
+            // Configure the HTTP request pipeline.
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
 
-void ListMigrations(MyDbContext myDbContext)
-{
-    var migrations = myDbContext.Database.GetAppliedMigrations();
-    foreach (var migration in migrations)
-    {
-        Console.WriteLine($"Applied Migration: {migration}");
+            app.UseHttpsRedirection();
+
+            app.UseAuthorization();
+
+            app.MapControllers();
+
+            app.Run();
+
+            
+        }
+        
+        private static void ListMigrations(MyDbContext myDbContext)
+        {
+            var migrations = myDbContext.Database.GetAppliedMigrations();
+            foreach (var migration in migrations)
+            {
+                Console.WriteLine($"Applied Migration: {migration}");
+            }
+        }
     }
 }

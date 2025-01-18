@@ -17,9 +17,9 @@ public class CategoriesController : ControllerBase
     }
     
     [HttpGet("allSimple")]
-    public IEnumerable<Category> GetAllCategories()
+    public async Task<IEnumerable<Category>> GetAllCategories()
     {       
-        return _ctx.Categories.ToArray();
+        return await _ctx.Categories.Include(x=>x.Products).ToArrayAsync();
     }
     
     [HttpGet("allAsSplitQuery")]
@@ -61,16 +61,6 @@ public class CategoriesController : ControllerBase
     public Category? GetByIdIQueryable(Guid id)
     {       
         return _ctx.Categories.Where(x => x.Id == id).FirstOrDefault();
-    }
-
-    private static readonly Func<MyDbContext, Guid, Category?> GetCategoryById =
-        EF.CompileQuery((MyDbContext context, Guid id) =>
-            context.Categories.FirstOrDefault(c => c.Id == id));
-    
-    [HttpGet("precompiled/{id}")]
-    public Category? GetByIdPrecompiled(Guid id)
-    {
-        return GetCategoryById(_ctx, id);
     }
     
     [HttpGet("names")]

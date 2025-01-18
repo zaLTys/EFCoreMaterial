@@ -1,6 +1,7 @@
 using DataAccessLayer;
 using DataAccessLayer.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebApplication1.Controllers;
 
@@ -15,10 +16,61 @@ public class ProductsController : ControllerBase
         _ctx = ctx;
     }
     
-    [HttpGet("all")]
-    public IEnumerable<Product> GetAllProducts()
+    [HttpGet("allSimple")]
+    public async Task<Product[]> GetAllProducts()
+    {
+            return await _ctx.Products
+                .Include(x=>x.Category)
+                .ToArrayAsync();
+    }
+    
+    [HttpGet("allAsSplitQuery")]
+    public Task<Product[]> GetAllAsSplitQuery()
     {       
-        return _ctx.Products.ToArray();
+        return _ctx.Products
+            .Include(x=>x.Category)
+            .AsSplitQuery()
+            .ToArrayAsync();
+    }
+    
+        
+    [HttpGet("allAsNoTracking")]
+    public Task<Product[]> GetAllAsNoTracking()
+    {       
+        return _ctx.Products
+            .Include(x=>x.Category)
+            .AsNoTracking()
+            .ToArrayAsync();
+    }
+    
+    [HttpGet("allAsSplitAsNoTracking")]
+    public IEnumerable<Product> GetAllAsSplitAsNoTracking()
+    {       
+        return _ctx.Products
+            .Include(x=>x.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .ToArray();
+    }
+    
+    [HttpGet("ienumerable/{id}")]
+    public Product? GetByIdIEnumerable(Guid id)
+    {       
+        return _ctx.Products.ToList().FirstOrDefault(x => x.Id == id);
+    }
+    
+    [HttpGet("iqueryable/{id}")]
+    public Product? GetByIdIQueryable(Guid id)
+    {       
+        return _ctx.Products.Where(x => x.Id == id).FirstOrDefault();
+    }
+    
+    [HttpGet("names")]
+    public IEnumerable<object> GetNames()
+    {
+        return _ctx.Products
+            .Select(x => new { x.Name })
+            .ToList();
     }
     
     [HttpPost]
