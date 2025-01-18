@@ -16,10 +16,69 @@ public class CategoriesController : ControllerBase
         _ctx = ctx;
     }
     
-    [HttpGet("all")]
+    [HttpGet("allSimple")]
     public IEnumerable<Category> GetAllCategories()
     {       
-        return _ctx.Categories.Include(x=>x.Products).ToArray();
+        return _ctx.Categories.ToArray();
+    }
+    
+    [HttpGet("allAsSplitQuery")]
+    public IEnumerable<Category> GetAllAsSplitQuery()
+    {       
+        return _ctx.Categories
+            .Include(x=>x.Products)
+            .AsSplitQuery()
+            .ToArray();
+    }
+    
+        
+    [HttpGet("allAsNoTracking")]
+    public IEnumerable<Category> GetAllAsNoTracking()
+    {       
+        return _ctx.Categories
+            .Include(x=>x.Products)
+            .AsNoTracking()
+            .ToArray();
+    }
+    
+    [HttpGet("allAsSplitAsNoTracking")]
+    public IEnumerable<Category> GetAllAsSplitAsNoTracking()
+    {       
+        return _ctx.Categories
+            .Include(x=>x.Products)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .ToArray();
+    }
+    
+    [HttpGet("ienumerable/{id}")]
+    public Category? GetByIdIEnumerable(Guid id)
+    {       
+        return _ctx.Categories.ToList().FirstOrDefault(x => x.Id == id);
+    }
+    
+    [HttpGet("iqueryable/{id}")]
+    public Category? GetByIdIQueryable(Guid id)
+    {       
+        return _ctx.Categories.Where(x => x.Id == id).FirstOrDefault();
+    }
+
+    private static readonly Func<MyDbContext, Guid, Category?> GetCategoryById =
+        EF.CompileQuery((MyDbContext context, Guid id) =>
+            context.Categories.FirstOrDefault(c => c.Id == id));
+    
+    [HttpGet("precompiled/{id}")]
+    public Category? GetByIdPrecompiled(Guid id)
+    {
+        return GetCategoryById(_ctx, id);
+    }
+    
+    [HttpGet("names")]
+    public IEnumerable<object> GetNames()
+    {
+        return _ctx.Categories
+                    .Select(x => new { x.Name })
+                    .ToList();
     }
     
     [HttpPost]
