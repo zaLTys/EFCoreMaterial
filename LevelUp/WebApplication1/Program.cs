@@ -1,4 +1,5 @@
 using DataAccessLayer;
+using DataAccessLayer.ManualMigrations.VersionMetadata;
 using FluentMigrator.Runner;
 using FluentMigrator.Runner.Initialization;
 using FluentMigrator.Runner.VersionTableInfo;
@@ -42,7 +43,7 @@ namespace WebApplication1
                     .WithGlobalCommandTimeout(TimeSpan.FromMinutes(15))
                     .ScanIn(typeof(MyDbContext).Assembly).For.Migrations())
                 .AddScoped<IMigrationRunner, MigrationRunner>()
-                .AddScoped(typeof(IVersionTableMetaData), typeof(DefaultVersionTableMetaData))
+                .AddScoped<IVersionTableMetaData, CustomVersionTableMetaData>()
                 .Configure<RunnerOptions>(opt =>
                 {
                     opt.Tags = new[] { "Postgres" };
@@ -67,10 +68,27 @@ namespace WebApplication1
                 }
             }
             
+            //Migration control
             using (var scope = app.Services.CreateScope())
             {
                 var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
-                runner.MigrateUp();
+
+                var migrationCommand = app.Services.GetRequiredService<IConfiguration>()["ManualMigrations:Command"] ?? string.Empty;
+
+                switch (migrationCommand.ToLower())
+                {
+                    case "apply":
+                        runner.MigrateUp();
+                        break;
+
+                    case "rollback":
+                        runner.MigrateDown(1);
+                        break;
+
+                    default:
+                        Console.WriteLine("No migration action taken.");
+                        break;
+                }
             }
 
             // Configure the HTTP request pipeline.

@@ -18,41 +18,29 @@ public class UsingCtx : Migration
     {
         Console.WriteLine("202501010003_UsingCtx");
 
-        var categories = new List<Category>();
-        for (int i = 0; i < 10; i++)
+        var categories = Enumerable.Range(0, 10).Select(cat => new Category
         {
-            var categoryId = Guid.NewGuid();
-            var cat = new Category
+            Id = Guid.NewGuid(),
+            Name = $"Category{cat}",
+            Products = Enumerable.Range(1, 10).Select(pr => new Product
             {
-                Name = $"Category{i}",
-                Id = categoryId,
-                Products = new List<Product>()
-            };
+                Id = Guid.NewGuid(),
+                Name = $"Product{pr} of Category{cat}",
+                Description = $"Product{pr} of Category{cat} Description",
+                Price = 0.99m + pr
+            }).ToList()
+        }).ToList();
 
-            for (int j = 1; j <= 10; j++)
-            {
-                var product = new Product
-                {
-                    Id = Guid.NewGuid(),
-                    Name = $"Product{j} of Category{i}",
-                    Description = $"Product{j} of Category{i} Description",
-                    Price = 10.99m + j,
-                };
-                cat.Products.Add(product);
-            }
-
-            categories.Add(cat);
-        }
-
-        using (var ctx = _ctx)
-        {
-            ctx.AddRange(categories);
-            ctx.SaveChanges();
-        }
+        _ctx.AddRange(categories);
+        _ctx.SaveChanges();
     }
 
     public override void Down()
     {
-        throw new NotImplementedException();
+        var categoryNames = Enumerable.Range(0, 10).Select(i => $"Category{i}").ToList();
+        var categoriesToRemove = _ctx.Categories.Where(c => categoryNames.Contains(c.Name));
+
+        _ctx.Categories.RemoveRange(categoriesToRemove);
+        _ctx.SaveChanges();
     }
 }

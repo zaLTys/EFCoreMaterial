@@ -11,16 +11,16 @@ public class MyDbContext : DbContext
 
     public DbSet<Product> Products { get; set; }
     public DbSet<Category> Categories { get; set; }
+    public DbSet<Review> Reviews { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         
-        // Configure the Product-Category relationship
         modelBuilder.Entity<Product>()
-            .HasOne(p => p.Category)                 // Specify the navigation property
-            .WithMany(c => c.Products)              // Specify the inverse navigation property
-            .HasForeignKey(p => p.CategoryId)       // Specify the foreign key
+            .HasOne(p => p.Category)                 
+            .WithMany(c => c.Products)            
+            .HasForeignKey(p => p.CategoryId)     
             .OnDelete(DeleteBehavior.Cascade);
         
         modelBuilder.Entity<Product>()
