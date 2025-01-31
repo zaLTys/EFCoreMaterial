@@ -19,7 +19,7 @@ public class CategoriesController : ControllerBase
     [HttpGet("allSimple")]
     public async Task<IEnumerable<Category>> GetAllCategories()
     {       
-        return await _ctx.Categories.Include(x=>x.Products).ToArrayAsync();
+        return await _ctx.Categories.ToArrayAsync();
     }
     
     [HttpGet("allAsSplitQuery")]

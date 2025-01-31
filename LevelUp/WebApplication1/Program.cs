@@ -72,22 +72,28 @@ namespace WebApplication1
             using (var scope = app.Services.CreateScope())
             {
                 var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+                var configuration = app.Services.GetRequiredService<IConfiguration>();
+                var migrateTo = configuration["ManualMigrations:MigrateTo"] ?? string.Empty;
 
-                var migrationCommand = app.Services.GetRequiredService<IConfiguration>()["ManualMigrations:Command"] ?? string.Empty;
-
-                switch (migrationCommand.ToLower())
+                if (string.IsNullOrWhiteSpace(migrateTo))
                 {
-                    case "apply":
-                        runner.MigrateUp();
-                        break;
+                    Console.WriteLine("No migration action taken.");
+                    return;
+                }
 
-                    case "rollback":
-                        runner.MigrateDown(1);
-                        break;
-
-                    default:
-                        Console.WriteLine("No migration action taken.");
-                        break;
+                if (migrateTo.Equals("latest", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("Applying latest migrations...");
+                    runner.MigrateUp();
+                }
+                else if (long.TryParse(migrateTo, out long targetVersion))
+                {
+                    Console.WriteLine($"Rolling back to migration version {targetVersion}...");
+                    runner.RollbackToVersion(targetVersion);
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid migration target: {migrateTo}. No action taken.");
                 }
             }
 
