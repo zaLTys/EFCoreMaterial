@@ -13,6 +13,24 @@ public class MyDbContext : DbContext
     public DbSet<Category> Categories { get; set; }
     public DbSet<Review> Reviews { get; set; }
     
+    public override int SaveChanges()
+    {
+        var entries = ChangeTracker.Entries<BaseEntity>();
+        foreach (var entry in entries)
+        {
+            if (entry.State == EntityState.Added)
+            {
+                entry.Entity.CreatedOn = DateTime.UtcNow;
+                entry.Entity.UpdatedOn = DateTime.UtcNow;
+            }
+            else if (entry.State == EntityState.Modified)
+            {
+                entry.Entity.UpdatedOn = DateTime.UtcNow;
+            }
+        }
+        return base.SaveChanges();
+    }
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -77,5 +95,7 @@ public class MyDbContext : DbContext
             }
         );
     }
+    
+    
 
 }

@@ -74,10 +74,103 @@ public class CategoriesController : ControllerBase
     [HttpPost]
     public IActionResult CreateCategory([FromBody] Category category)
     {
-            //validate and stuff
-        _ctx.Categories.Add(category);
-        _ctx.SaveChanges();
+        //Detached → Added → Unchanged
+        
+        // Initially, this newCategory is not being tracked by EF Core.
+        Console.WriteLine($"Category {category.Name} (before Add): {_ctx.Entry(category).State}"); 
+        // Output: Detached
 
+        // Mark it as to be added to the database
+        _ctx.Categories.Add(category);
+        Console.WriteLine($"Category {category.Name} (after Add): {_ctx.Entry(category).State}");
+        // Output: Added
+
+        // Once we call SaveChanges, EF will insert the record and mark it as Unchanged
+        _ctx.SaveChanges();
+        Console.WriteLine($"Category {category.Name} (after SaveChanges): {_ctx.Entry(category).State}");
+        // Output: Unchanged
+        
         return CreatedAtAction(nameof(CreateCategory), new { id = category.Id }, category);
+    }  
+    
+    [HttpPut("{id}")]
+    public IActionResult ModifyCategory(Guid id, [FromBody] Category category)
+    {
+        //Unchanged → Modified → Unchanged
+        
+        // Retrieve entity 
+        var entity = _ctx.Categories.Where(x => x.Id == id).FirstOrDefault();
+        Console.WriteLine($"entity (after retrieval): {_ctx.Entry(entity).State}");
+        
+        // Change a property on the existing category
+        entity.Name = category.Name;
+        Console.WriteLine($"entity (after property change): {_ctx.Entry(entity).State}");
+        // Output: Modified
+
+        // Once we save changes, EF will apply the update to the DB, and state becomes Unchanged
+        _ctx.SaveChanges();
+        Console.WriteLine($"entity (after SaveChanges on modification): {_ctx.Entry(entity).State}");
+        // Output: Unchanged
+
+        
+        return CreatedAtAction(nameof(ModifyCategory), new { id = entity.Id }, entity);
     }
+    
+    [HttpDelete("{id}")]
+    public IActionResult DeleteCategory(Guid id)
+    {
+        //Unchanged → Deleted → Detached
+        
+        // Retrieve entity 
+        var entity = _ctx.Categories.Where(x => x.Id == id).FirstOrDefault();
+        Console.WriteLine($"Entity (after retrieval): {_ctx.Entry(entity).State}");
+        
+        _ctx.Categories.Remove(entity);
+        Console.WriteLine($"Entity (after Remove): {_ctx.Entry(entity).State}");
+        // Output: Deleted
+
+        // Once we save changes, it will be removed from the DB, 
+        // but the in-memory tracker will change the state to Detached AFTER the deletion.
+        _ctx.SaveChanges();
+        Console.WriteLine($"Entity (after SaveChanges on removal): {_ctx.Entry(entity).State}");
+        // Output: Detached (in most cases after the entity is fully removed from the context)
+        
+        return CreatedAtAction(nameof(DeleteCategory), new { id = entity.Id });
+    }
+    
+    [HttpPost("attachDemo")]
+    public IActionResult AttachDemo()
+    {
+        var id = Guid.NewGuid();
+        var category = new Category()
+        {
+            Id = id,
+            Name = "Category"+id,
+            Products = new List<Product>()
+        };
+        
+        // The context doesn’t know about anotherCategory yet
+        Console.WriteLine($"Entity (initially): {_ctx.Entry(category).State}");
+        // Output: Detached
+
+        // If we want EF to track it as an existing entity without marking it as changed, we use Attach:
+        _ctx.Categories.Attach(category);
+        Console.WriteLine($"Entity (after Attach): {_ctx.Entry(category).State}");
+        // Output: Unchanged (assuming EF tries to match the primary key but doesn't find it in DB, it might remain Unchanged in memory)
+
+        // If we know it’s new, we can mark it as Added manually:
+        _ctx.Entry(category).State = EntityState.Added;
+        Console.WriteLine($"Entity (set to Added): {_ctx.Entry(category).State}");
+        // Output: Added
+
+        // Save to commit
+        _ctx.SaveChanges();
+        Console.WriteLine($"Entity (after SaveChanges): {_ctx.Entry(category).State}");
+        // Output: Unchanged
+       
+        
+        return CreatedAtAction(nameof(AttachDemo), new { id = category.Id }, category);
+    }  
+    
+    
 }
