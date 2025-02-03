@@ -1,5 +1,7 @@
 using DataAccessLayer;
 using DataAccessLayer.Models;
+using DataAccessLayer.UoW;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -170,7 +172,54 @@ public class CategoriesController : ControllerBase
        
         
         return CreatedAtAction(nameof(AttachDemo), new { id = category.Id }, category);
-    }  
+    }
+
+
+    [HttpPost("unitOfWorkDemo")]
+    public async Task<IActionResult> UnitOfWorkDemo()
+    {
     
+        var category = new Category { Name = "UoWDemoCategory" };
+        var product1 = new Product 
+        { 
+            Name = "UoWDemoProduct1", 
+            Description = "Something heavy processed or fetched from an API", 
+            Price = 11m,
+            Category = category
+        };
+
+        var product2 = new Product
+        {
+            Name = "UoWDemoProduct2", 
+            Description = "Another product from external system",
+            Price = 13m,
+            Category = category
+        };
     
+        var reviewForProduct1 = new Review
+        {
+            Content = "Some validated review content",
+            Product = product1
+        };
+        
+        using var uow = new UnitOfWork(_ctx);
+        try
+        {
+            await uow.BeginTransactionAsync();
+            
+            uow.Context.Categories.Add(category);
+            uow.Context.Products.AddRange(product1, product2);
+            uow.Context.Reviews.Add(reviewForProduct1);
+            
+            await uow.SaveChangesAsync();
+            await uow.CommitTransactionAsync();
+        }
+        catch
+        {
+            await uow.RollbackTransactionAsync();
+            return Problem();
+        }
+
+        return Ok("Success");
+    }
 }
