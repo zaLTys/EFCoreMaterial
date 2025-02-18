@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace WebApplication1.Controllers;
+namespace Web.API.Controllers;
 
 [ApiController]
 [Route("[controller]")]

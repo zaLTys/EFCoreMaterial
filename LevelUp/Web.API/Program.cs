@@ -5,7 +5,7 @@ using FluentMigrator.Runner.Initialization;
 using FluentMigrator.Runner.VersionTableInfo;
 using Microsoft.EntityFrameworkCore;
 
-namespace WebApplication1
+namespace Web.API
 {
     public class Program
     {
