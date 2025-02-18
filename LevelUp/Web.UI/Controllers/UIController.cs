@@ -1,12 +1,13 @@
 ﻿using System.Text;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Web.UI.ViewModels;
 
 namespace Web.UI.Controllers
 {
-    //[Authorize]
+    [Authorize]
     public class UIController : Controller
     {
         private readonly IHttpClientFactory _httpClientFactory;
