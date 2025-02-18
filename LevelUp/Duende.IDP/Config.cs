@@ -23,10 +23,10 @@ public static class Config
             new Client()
             {
                 // The name of the client application
-                ClientName = "WebApp1",
+                ClientName = "WebUIClient",
 
                 // Unique identifier for the client
-                ClientId = "webapp1client",
+                ClientId = "webuiclient",
 
                 // Specifies the authentication flow to be used
                 // 'Code' grant type is used for OAuth 2.0 authorization code flow
@@ -35,7 +35,7 @@ public static class Config
                 // List of allowed redirect URIs after authentication
                 RedirectUris =
                 {
-                    "https://localhost:7285/signin-oidc" // Redirect URI for OpenID Connect authentication
+                    "https://localhost:7188/signin-oidc" // Redirect URI for OpenID Connect authentication in webUI project
                 },
 
                 // Defines the scopes that this client can request
